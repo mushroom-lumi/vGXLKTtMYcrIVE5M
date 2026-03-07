@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Habit Tracker</title>
+
+<!-- PWA Meta -->
+<meta name="theme-color" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Habits">
+
+<!-- Icons -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+<link rel="apple-touch-icon" href="icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192x192.png">
+
+<style>
+
+:root {
+  --row-h: 40px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, sans-serif;
+  background: #f2f2f2;
+  padding: 16px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.container {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.habit-column {
+  min-width: 72px;
+  flex-shrink: 0;
+}
+
+.top-spacer {
+  height: var(--row-h);
+}
+
+.section-title {
+  height: var(--row-h);
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  font-size: 13px;
+  border-bottom: 2px solid #aaa;
+}
+
+.habit {
+  height: var(--row-h);
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+
+.days {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+
+.day {
+  background: #ddd;
+  border-radius: 22px;
+  padding: 6px 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.day.today {
+  border: 3px solid black;
+}
+
+.day.done {
+  background: black;
+}
+
+.day-label-row {
+  height: var(--row-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.day-label {
+  padding: 3px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.day.done .day-label {
+  color: white;
+}
+
+.dot-spacer {
+  height: var(--row-h);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spacer-line {
+  width: 60%;
+  height: 2px;
+  background: #aaa;
+  opacity: 0.5;
+}
+
+.day.done .spacer-line {
+  background: black;
+  /* opacity: 0.4; */
+}
+
+.dot-row {
+  height: var(--row-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid black;
+  cursor: pointer;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+
+.dot.done {
+  background: black;
+}
+
+.day.done .dot:not(.done) {
+  border-color: white;
+}
+
+.day.done .dot.done {
+  background: black;
+  border-color: black;
+}
+
+/* ── 安装浮层 ── */
+#install-banner {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #000;
+  color: #fff;
+  border-radius: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 999;
+  max-width: calc(100vw - 32px);
+  animation: slideUp 0.3s ease;
+}
+
+#install-banner.hidden {
+  display: none !important;
+}
+
+@keyframes slideUp {
+  from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+}
+
+#install-banner img {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+}
+
+#install-banner .banner-text {
+  flex: 1;
+}
+
+#install-banner .banner-text strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+#install-banner .banner-text span {
+  font-size: 12px;
+  opacity: 0.65;
+}
+
+#install-banner .banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+#install-banner button {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#btn-install {
+  background: white;
+  color: black;
+}
+
+#btn-dismiss {
+  background: rgba(255,255,255,0.15);
+  color: white;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Habit Tracker</h1>
+
+<div class="container">
+  <div id="habits" class="habit-column"></div>
+  <div id="days" class="days"></div>
+</div>
+
+<!-- 自定义安装浮层 -->
+<div id="install-banner" class="hidden">
+  <img src="icons/icon-192x192.png" alt="icon">
+  <div class="banner-text">
+    <strong>添加到主屏幕</strong>
+    <span>离线使用，像原生 App 一样</span>
+  </div>
+  <div class="banner-actions">
+    <button id="btn-install">安装</button>
+    <button id="btn-dismiss">忽略</button>
+  </div>
+</div>
+
+<script>
+
+/* ── 习惯数据 ── */
+const sections = [
+  {
+    title: "起床后",
+    habits: ["穿衣服", "上厕所", "刷牙", "洗脸", "梳头"]
+  },
+  {
+    title: "早餐后",
+    habits: ["洗内裤", "消毒内裤", "收衣服", "叠衣服"]
+  }
+]
+
+const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+const today = (new Date().getDay() + 6) % 7
+
+let flatList = []
+sections.forEach(s => {
+  flatList.push(null)
+  s.habits.forEach(h => flatList.push(h))
+})
+
+function weekKey() {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), 0, 1)
+  const diff = (now - start) / 86400000
+  return Math.floor((diff + start.getDay() + 1) / 7)
+}
+
+let store = JSON.parse(localStorage.getItem("habitData")) || { week: null, data: {} }
+if (store.week !== weekKey()) {
+  store.week = weekKey()
+  store.data = {}
+}
+let data = store.data
+
+function save() {
+  localStorage.setItem("habitData", JSON.stringify(store))
+}
+
+/* ── 渲染 ── */
+function render() {
+  const habitCol = document.getElementById("habits")
+  habitCol.innerHTML = ""
+
+  const topSpacer = document.createElement("div")
+  topSpacer.className = "top-spacer"
+  habitCol.appendChild(topSpacer)
+
+  let sectionIndex = 0
+  flatList.forEach(item => {
+    if (item === null) {
+      const titleDiv = document.createElement("div")
+      titleDiv.className = "section-title"
+      titleDiv.innerText = sections[sectionIndex].title
+      sectionIndex++
+      habitCol.appendChild(titleDiv)
+    } else {
+      const div = document.createElement("div")
+      div.className = "habit"
+      div.innerText = item
+      habitCol.appendChild(div)
+    }
+  })
+
+  const daysDiv = document.getElementById("days")
+  daysDiv.innerHTML = ""
+
+  dayNames.forEach((d, dayIndex) => {
+    const day = document.createElement("div")
+    day.className = "day"
+    if (dayIndex === today) day.classList.add("today")
+
+    const labelRow = document.createElement("div")
+    labelRow.className = "day-label-row"
+    const label = document.createElement("div")
+    label.className = "day-label"
+    label.innerText = d
+    labelRow.appendChild(label)
+    day.appendChild(labelRow)
+
+    let habitIndex = 0
+    flatList.forEach(item => {
+      if (item === null) {
+        const spacer = document.createElement("div")
+        spacer.className = "dot-spacer"
+        const line = document.createElement("div")
+        line.className = "spacer-line"
+        spacer.appendChild(line)
+        day.appendChild(spacer)
+      } else {
+        const dotRow = document.createElement("div")
+        dotRow.className = "dot-row"
+        const dot = document.createElement("div")
+        dot.className = "dot"
+        const key = `${dayIndex}-${habitIndex}`
+        if (data[key]) dot.classList.add("done")
+        dot.onclick = () => {
+          data[key] = !data[key]
+          save()
+          render()
+        }
+        dotRow.appendChild(dot)
+        day.appendChild(dotRow)
+        habitIndex++
+      }
+    })
+
+    const totalHabits = flatList.filter(x => x !== null).length
+    let complete = totalHabits > 0
+    for (let i = 0; i < totalHabits; i++) {
+      if (!data[`${dayIndex}-${i}`]) { complete = false; break }
+    }
+    if (complete) day.classList.add("done")
+
+    daysDiv.appendChild(day)
+  })
+}
+
+render()
+
+/* ── Service Worker 注册（immediate） ── */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(reg => {
+        console.log('[SW] Registered, scope:', reg.scope)
+        // immediate update check
+        reg.update()
+      })
+      .catch(err => console.error('[SW] Registration failed:', err))
+  })
+}
+
+/* ── 自定义安装浮层 ── */
+let deferredPrompt = null
+const banner = document.getElementById('install-banner')
+const btnInstall = document.getElementById('btn-install')
+const btnDismiss = document.getElementById('btn-dismiss')
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault()
+  deferredPrompt = e
+  // 显示安装浮层
+  banner.classList.remove('hidden')
+})
+
+btnInstall.addEventListener('click', async () => {
+  if (!deferredPrompt) return
+  deferredPrompt.prompt()
+  const { outcome } = await deferredPrompt.userChoice
+  console.log('[PWA] Install outcome:', outcome)
+  deferredPrompt = null
+  banner.classList.add('hidden')
+})
+
+btnDismiss.addEventListener('click', () => {
+  banner.classList.add('hidden')
+  deferredPrompt = null
+})
+
+// 已安装则隐藏浮层
+window.addEventListener('appinstalled', () => {
+  banner.classList.add('hidden')
+  deferredPrompt = null
+  console.log('[PWA] App installed!')
+})
+
+</script>
+</body>
+</html>
