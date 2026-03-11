@@ -166,6 +166,75 @@ h1 {
   border-color: black;
 }
 
+/* ── 重置按钮 ── */
+#reset-btn {
+  display: block;
+  margin: 0 auto 20px;
+  background: none;
+  border: 2px solid #bbb;
+  border-radius: 20px;
+  padding: 6px 18px;
+  font-size: 13px;
+  color: #888;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+#reset-btn:hover {
+  border-color: #e00;
+  color: #e00;
+}
+
+/* ── 确认弹窗 ── */
+#confirm-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+#confirm-overlay.show {
+  display: flex;
+}
+#confirm-box {
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px 24px 20px;
+  max-width: 280px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+#confirm-box p {
+  font-size: 15px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+  color: #222;
+}
+#confirm-box .confirm-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+#confirm-box button {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#btn-confirm-yes {
+  background: #e00;
+  color: #fff;
+}
+#btn-confirm-no {
+  background: #eee;
+  color: #333;
+}
+
 /* ── 安装浮层 ── */
 #install-banner {
   display: none;
@@ -248,6 +317,19 @@ h1 {
 
 <h1>Habit Tracker</h1>
 
+<button id="reset-btn">↺ 重置本周打卡</button>
+
+<!-- 确认弹窗 -->
+<div id="confirm-overlay">
+  <div id="confirm-box">
+    <p>确定要清空本周所有打卡记录吗？</p>
+    <div class="confirm-btns">
+      <button id="btn-confirm-yes">清空</button>
+      <button id="btn-confirm-no">取消</button>
+    </div>
+  </div>
+</div>
+
 <div class="container">
   <div id="habits" class="habit-column"></div>
   <div id="days" class="days"></div>
@@ -277,11 +359,11 @@ const sections = [
   {
     title: "早餐后",
     habits: ["吃药","洗内裤", "消毒内裤", "洗衣服","收衣服", "叠衣服","晒衣服"]
-  }
+  },
   {
     title: "午餐后",
     habits: ["吃药"]
-  }
+  },
   {
     title: "晚餐后",
     habits: ["吃药","洗澡", "吹头","刷洗梳"]
@@ -398,6 +480,29 @@ function render() {
 }
 
 render()
+
+/* ── 手动重置本周打卡 ── */
+const resetBtn = document.getElementById('reset-btn')
+const confirmOverlay = document.getElementById('confirm-overlay')
+const btnConfirmYes = document.getElementById('btn-confirm-yes')
+const btnConfirmNo = document.getElementById('btn-confirm-no')
+
+resetBtn.addEventListener('click', () => {
+  confirmOverlay.classList.add('show')
+})
+btnConfirmNo.addEventListener('click', () => {
+  confirmOverlay.classList.remove('show')
+})
+btnConfirmYes.addEventListener('click', () => {
+  store.data = {}
+  data = store.data
+  save()
+  render()
+  confirmOverlay.classList.remove('show')
+})
+confirmOverlay.addEventListener('click', e => {
+  if (e.target === confirmOverlay) confirmOverlay.classList.remove('show')
+})
 
 /* ── Service Worker 注册（immediate） ── */
 if ('serviceWorker' in navigator) {
