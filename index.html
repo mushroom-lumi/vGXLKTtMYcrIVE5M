@@ -133,7 +133,6 @@ h1 {
 
 .day.done .spacer-line {
   background: black;
-  /* opacity: 0.4; */
 }
 
 .dot-row {
@@ -290,11 +289,14 @@ sections.forEach(s => {
   s.habits.forEach(h => flatList.push(h))
 })
 
+/* ── 以本周一日期（YYYY-MM-DD）作为 key，周一自动清空 ── */
 function weekKey() {
   const now = new Date()
-  const start = new Date(now.getFullYear(), 0, 1)
-  const diff = (now - start) / 86400000
-  return Math.floor((diff + start.getDay() + 1) / 7)
+  const day = now.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+  const monday = new Date(now)
+  monday.setHours(0, 0, 0, 0)
+  monday.setDate(now.getDate() - ((day + 6) % 7))
+  return monday.toISOString().slice(0, 10) // e.g. "2026-03-09"
 }
 
 let store = JSON.parse(localStorage.getItem("habitData")) || { week: null, data: {} }
@@ -395,7 +397,6 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .then(reg => {
         console.log('[SW] Registered, scope:', reg.scope)
-        // immediate update check
         reg.update()
       })
       .catch(err => console.error('[SW] Registration failed:', err))
@@ -411,7 +412,6 @@ const btnDismiss = document.getElementById('btn-dismiss')
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault()
   deferredPrompt = e
-  // 显示安装浮层
   banner.classList.remove('hidden')
 })
 
@@ -429,7 +429,6 @@ btnDismiss.addEventListener('click', () => {
   deferredPrompt = null
 })
 
-// 已安装则隐藏浮层
 window.addEventListener('appinstalled', () => {
   banner.classList.add('hidden')
   deferredPrompt = null
